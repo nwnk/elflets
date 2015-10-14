@@ -3,10 +3,6 @@
  * particular elf class.  Think "ls | xargs file | grep ELF | cut -f1"
  * only with a lot less bullshit.
  *
- * Each file printed is null-terminated, not newline-terminated.  If you
- * you really want the other thing, "elfp ... | xargs -0 -n1 echo", but
- * I'm intending to feed this output to xargs -0 anyway.
- *
  * By default no elf clases are requested, so nothing will be printed.
  */
 
@@ -24,6 +20,8 @@
 #define P_DSO	    (1 << 1)
 #define	P_EXEC	    (1 << 2)
 #define P_OTHER	    (1 << 3)
+
+#define P_NEWLINE   (1 << 8)
 
 static int
 has_dt_debug(Elf *elf, GElf_Ehdr *ehdr)
@@ -103,7 +101,12 @@ test_one(char *f, Elf *elf, int flags)
     return;
 
 out_print:
-    write(1, f, strlen(f) + 1);
+    if (flags & P_NEWLINE) {
+	write(1, f, strlen(f));
+	write(1, "\n", 1);
+    } else {
+	write(1, f, strlen(f) + 1);
+    }
 }
 
 static void
@@ -123,9 +126,9 @@ handle_one(char *f, int flags)
 
 int main(int argc, char **argv)
 {
-    int i, flags = 0;
+    int i, flags = 0, newline = 0;
 
-    while ((i = getopt(argc, argv, "rdeo")) != -1) {
+    while ((i = getopt(argc, argv, "rdeon")) != -1) {
 	switch (i) {
 	case 'r':
 	    flags |= P_REL;
@@ -139,11 +142,17 @@ int main(int argc, char **argv)
 	case 'o':
 	    flags |= P_OTHER;
 	    break;
+	case 'n':
+	    newline = 1;
+	    break;
 	}
     }
 
     if (!flags)
 	return 0;
+
+    if (newline)
+	flags |= P_NEWLINE;
 
     elf_version(EV_CURRENT);
 
