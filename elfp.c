@@ -26,9 +26,46 @@
 #define P_OTHER	    (1 << 3)
 
 static int
-has_dt_debug(Elf *elf)
+has_dt_debug(Elf *elf, GElf_Ehdr *ehdr)
 {
-    return 0; /* XXX */
+    int i;
+
+    for (i = 0; i < ehdr->e_phnum; i++) {
+	GElf_Phdr phdr;
+	GElf_Shdr shdr;
+	Elf_Scn *scn;
+	Elf_Data *data;
+	int j;
+
+	if (gelf_getphdr(elf, i, &phdr) == NULL)
+	    continue;
+
+	if (phdr.p_type != PT_DYNAMIC)
+	    continue;
+
+	scn = gelf_offscn(elf, phdr.p_offset);
+
+	if (gelf_getshdr(scn, &shdr) == NULL)
+	    continue;
+
+	if (shdr.sh_type != SHT_DYNAMIC)
+	    continue;
+
+	if ((data = elf_getdata(scn, NULL)) == NULL)
+	    continue;
+
+	for (j = 0;
+	     j < shdr.sh_size / gelf_fsize(elf, ELF_T_DYN, 1, EV_CURRENT);
+	     j++) {
+	    GElf_Dyn dyn;
+	    if (gelf_getdyn(data, j, &dyn)) {
+		if (dyn.d_tag == DT_DEBUG)
+		    return 1;
+	    }
+	}
+    }
+
+    return 0;
 }
 
 static void
@@ -55,7 +92,7 @@ test_one(char *f, Elf *elf, int flags)
     if (ehdr.e_type != ET_DYN)
 	return;
 
-    if (has_dt_debug(elf)) {
+    if (has_dt_debug(elf, &ehdr)) {
 	if (flags & P_EXEC) {
 	    goto out_print; /* treat PIEs as executables */
 	}
