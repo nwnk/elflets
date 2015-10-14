@@ -45,6 +45,10 @@ test_one(char *f, Elf *elf, int flags)
     if ((flags & P_EXEC) && (ehdr.e_type == ET_EXEC))
 	goto out_print;
 
+    /* arguably should print if P_OTHER, but, nah. */
+    if (ehdr.e_type != ET_DYN)
+	return;
+
 out_print:
     write(1, f, strlen(f) + 1);
 }
