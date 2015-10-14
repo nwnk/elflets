@@ -85,6 +85,9 @@ int main(int argc, char **argv)
 	}
     }
 
+    if (!flags)
+	return 0;
+
     elf_version(EV_CURRENT);
 
     for (i = optind; i < argc; i++)
