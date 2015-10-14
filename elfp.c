@@ -17,6 +17,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <libelf.h>
+#include <gelf.h>
 
 #define P_INVAL	    0
 #define P_REL	    (1 << 0)
@@ -27,13 +28,22 @@
 static void
 test_one(char *f, Elf *elf, int flags)
 {
+    GElf_Ehdr ehdr;
+
     if (elf_kind(elf) != ELF_K_ELF) {
 	if (flags & P_OTHER)
 	    goto out_print;
 	return;
     }
 
-    /* more tests */
+    if (gelf_getehdr(elf, &ehdr) == NULL)
+	return;
+
+    if ((flags & P_REL) && (ehdr.e_type == ET_REL))
+	goto out_print;
+
+    if ((flags & P_EXEC) && (ehdr.e_type == ET_EXEC))
+	goto out_print;
 
 out_print:
     write(1, f, strlen(f) + 1);
