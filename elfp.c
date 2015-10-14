@@ -128,7 +128,7 @@ int main(int argc, char **argv)
 {
     int i, flags = 0, newline = 0;
 
-    while ((i = getopt(argc, argv, "rdeon")) != -1) {
+    while ((i = getopt(argc, argv, "hrdeon")) != -1) {
 	switch (i) {
 	case 'r':
 	    flags |= P_REL;
@@ -145,6 +145,16 @@ int main(int argc, char **argv)
 	case 'n':
 	    newline = 1;
 	    break;
+	case 'h':
+	    fprintf(stderr, "Usage: elfp [flags] [files]\n");
+	    fprintf(stderr, "Flags:\n");
+	    fprintf(stderr, "       -r    Match relocatables\n");
+	    fprintf(stderr, "       -d    Match shared libraries\n");
+	    fprintf(stderr, "       -e    Match executables\n");
+	    fprintf(stderr, "       -o    Match other ELF types (.a, etc.)\n");
+	    fprintf(stderr, "       -n    Terminate output with newlines\n");
+	    fprintf(stderr, "       -h    Print this help text and exit\n");
+	    return 0;
 	}
     }
 
