@@ -25,6 +25,12 @@
 #define	P_EXEC	    (1 << 2)
 #define P_OTHER	    (1 << 3)
 
+static int
+has_dt_debug(Elf *elf)
+{
+    return 0; /* XXX */
+}
+
 static void
 test_one(char *f, Elf *elf, int flags)
 {
@@ -48,6 +54,16 @@ test_one(char *f, Elf *elf, int flags)
     /* arguably should print if P_OTHER, but, nah. */
     if (ehdr.e_type != ET_DYN)
 	return;
+
+    if (has_dt_debug(elf)) {
+	if (flags & P_EXEC) {
+	    goto out_print; /* treat PIEs as executables */
+	}
+    } else if (flags & P_DSO) {
+	goto out_print;
+    }
+
+    return;
 
 out_print:
     write(1, f, strlen(f) + 1);
