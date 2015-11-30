@@ -4,6 +4,8 @@
  * only with a lot less bullshit.
  *
  * By default no elf clases are requested, so nothing will be printed.
+ *
+ * This program is licensed under the GNU Public License version 2.
  */
 
 #include <sys/types.h>
