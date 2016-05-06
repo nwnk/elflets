@@ -136,11 +136,13 @@ usage(int status)
 
     fprintf(out, "Usage: elfp [flags] file0 [file1 [.. fileN]]\n");
     fprintf(out, "Flags:\n");
-    fprintf(out, "       -r    Match relocatables\n");
+
     fprintf(out, "       -d    Match shared libraries\n");
     fprintf(out, "       -e    Match executables\n");
-    fprintf(out, "       -o    Match other ELF types (.a, etc.)\n");
     fprintf(out, "       -n    Terminate output with newlines\n");
+    fprintf(out, "       -o    Match other ELF types (.a, etc.)\n");
+    fprintf(out, "       -r    Match relocatables\n");
+
     fprintf(out, "       -h    Print this help text and exit\n");
 
     exit(status);
@@ -160,10 +162,9 @@ int main(int argc, char **argv)
     };
     int longindex = -1;
 
-    while ((i = getopt_long(argc, argv, "hrdeon", options, &longindex)) != -1) {
+    while ((i = getopt_long(argc, argv, "denorh", options,
+			    &longindex)) != -1) {
 	switch (i) {
-	case 'r':
-	    flags |= P_REL;
 	    break;
 	case 'd':
 	    flags |= P_DSO;
@@ -171,12 +172,16 @@ int main(int argc, char **argv)
 	case 'e':
 	    flags |= P_EXEC;
 	    break;
-	case 'o':
-	    flags |= P_OTHER;
-	    break;
 	case 'n':
 	    newline = 1;
 	    break;
+	case 'o':
+	    flags |= P_OTHER;
+	    break;
+	case 'r':
+	    flags |= P_REL;
+	    break;
+
 	case 'h':
 	case '?':
 	    usage(longindex == -1 ? 1 : 0);
