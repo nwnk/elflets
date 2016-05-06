@@ -11,6 +11,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <getopt.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -126,11 +128,39 @@ handle_one(char *f, int flags)
     }
 }
 
+static void
+__attribute__((__noreturn__))
+usage(int status)
+{
+    FILE *out = status ? stderr : stdout;
+
+    fprintf(out, "Usage: elfp [flags] file0 [file1 [.. fileN]]\n");
+    fprintf(out, "Flags:\n");
+    fprintf(out, "       -r    Match relocatables\n");
+    fprintf(out, "       -d    Match shared libraries\n");
+    fprintf(out, "       -e    Match executables\n");
+    fprintf(out, "       -o    Match other ELF types (.a, etc.)\n");
+    fprintf(out, "       -n    Terminate output with newlines\n");
+    fprintf(out, "       -h    Print this help text and exit\n");
+
+    exit(status);
+}
+
 int main(int argc, char **argv)
 {
     int i, flags = 0, newline = 0;
+    struct option options[] = {
+	    {.name = "help",
+	     .val = '?',
+	    },
+	    {.name = "usage",
+	     .val = '?',
+	    },
+	    {.name = ""}
+    };
+    int longindex = -1;
 
-    while ((i = getopt(argc, argv, "hrdeon")) != -1) {
+    while ((i = getopt_long(argc, argv, "hrdeon", options, &longindex)) != -1) {
 	switch (i) {
 	case 'r':
 	    flags |= P_REL;
@@ -148,15 +178,9 @@ int main(int argc, char **argv)
 	    newline = 1;
 	    break;
 	case 'h':
-	    fprintf(stderr, "Usage: elfp [flags] [files]\n");
-	    fprintf(stderr, "Flags:\n");
-	    fprintf(stderr, "       -r    Match relocatables\n");
-	    fprintf(stderr, "       -d    Match shared libraries\n");
-	    fprintf(stderr, "       -e    Match executables\n");
-	    fprintf(stderr, "       -o    Match other ELF types (.a, etc.)\n");
-	    fprintf(stderr, "       -n    Terminate output with newlines\n");
-	    fprintf(stderr, "       -h    Print this help text and exit\n");
-	    return 0;
+	case '?':
+	    usage(longindex == -1 ? 1 : 0);
+	    break;
 	}
     }
 
@@ -167,6 +191,9 @@ int main(int argc, char **argv)
 	flags |= P_NEWLINE;
 
     elf_version(EV_CURRENT);
+
+    if (optind == argc)
+	usage(1);
 
     for (i = optind; i < argc; i++)
 	handle_one(argv[i], flags);
