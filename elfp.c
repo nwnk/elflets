@@ -24,8 +24,58 @@
 #define P_DSO	    (1 << 1)
 #define	P_EXEC	    (1 << 2)
 #define P_OTHER	    (1 << 3)
+#define P_DEBUG     (1 << 4)
 
 #define P_NEWLINE   (1 << 8)
+
+static Elf_Scn *
+get_scn_named(Elf *elf, char *goal, GElf_Shdr *shdrp_out)
+{
+    int rc;
+    size_t shstrndx = -1;
+    int scn_no = 0;
+    Elf_Scn *scn = NULL;
+    GElf_Shdr shdr_data, *shdrp;
+
+    shdrp = shdrp_out ? shdrp_out : &shdr_data;
+
+    rc = elf_getshdrstrndx(elf, &shstrndx);
+    if (rc < 0)
+	return NULL;
+
+    do {
+	GElf_Shdr *shdr;
+	char *name;
+
+	scn = elf_getscn(elf, ++scn_no);
+	if (!scn)
+	    break;
+
+	shdr = gelf_getshdr(scn, shdrp);
+	if (!shdr)
+	    /*
+	     * the binary is malformed, but hey, maybe the next one is fine,
+	     * why not...
+	     */
+	    continue;
+
+	name = elf_strptr(elf, shstrndx, shdr->sh_name);
+	if (name && !strcmp(name, goal))
+	    return scn;
+    } while (scn != NULL);
+    return NULL;
+}
+
+static int
+has_debuginfo(Elf *elf)
+{
+    Elf_Scn *scn;
+
+    scn = get_scn_named(elf, ".debug_info", NULL);
+    if (scn)
+	return 1;
+    return 0;
+}
 
 static int
 has_dt_debug(Elf *elf, GElf_Ehdr *ehdr)
@@ -90,6 +140,9 @@ test_one(char *f, Elf *elf, int flags)
     if ((flags & P_EXEC) && (ehdr.e_type == ET_EXEC))
 	goto out_print;
 
+    if ((flags & P_DEBUG) && has_debuginfo(elf))
+	goto out_print;
+
     /* arguably should print if P_OTHER, but, nah. */
     if (ehdr.e_type != ET_DYN)
 	return;
@@ -138,6 +191,7 @@ usage(int status)
     fprintf(out, "Flags:\n");
 
     fprintf(out, "       -d    Match shared libraries\n");
+    fprintf(out, "       -D    Match objects with debuginfo\n");
     fprintf(out, "       -e    Match executables\n");
     fprintf(out, "       -n    Terminate output with newlines\n");
     fprintf(out, "       -o    Match other ELF types (.a, etc.)\n");
@@ -162,9 +216,11 @@ int main(int argc, char **argv)
     };
     int longindex = -1;
 
-    while ((i = getopt_long(argc, argv, "denorh", options,
+    while ((i = getopt_long(argc, argv, "Ddenorh", options,
 			    &longindex)) != -1) {
 	switch (i) {
+	case 'D':
+	    flags |= P_DEBUG;
 	    break;
 	case 'd':
 	    flags |= P_DSO;
@@ -205,3 +261,5 @@ int main(int argc, char **argv)
 
     return 0;
 }
+
+/* vim:set sts=4 sw=4: */
