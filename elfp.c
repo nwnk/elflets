@@ -37,7 +37,7 @@ has_dt_debug(Elf *elf, GElf_Ehdr *ehdr)
 	GElf_Shdr shdr;
 	Elf_Scn *scn;
 	Elf_Data *data;
-	int j;
+	unsigned int j;
 
 	if (gelf_getphdr(elf, i, &phdr) == NULL)
 	    continue;
