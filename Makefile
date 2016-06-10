@@ -1,7 +1,9 @@
-all : elfp
+TARGETS = elfp
 
-elfp: elfp.c
-	gcc -g -Wall -Werror -Wextra -O2 -o elfp elfp.c -lelf
+all : $(TARGETS)
+
+%: %.c
+	gcc -g -Wall -Werror -Wextra -O2 -o $@ $< -lelf
 
 clean:
-	rm -vf *.o elfp
+	rm -vf *.o $(TARGETS)
